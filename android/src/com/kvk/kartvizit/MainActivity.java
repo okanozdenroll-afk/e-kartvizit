@@ -215,6 +215,38 @@ public class MainActivity extends Activity {
             } });
         }
 
+        /* birden çok sunumu tek seferde gönder (WhatsApp seçilince hepsi aynı kişiye gider) */
+        @JavascriptInterface
+        public void shareAssets(final String json, final String mime) {
+            runOnUiThread(new Runnable() { public void run() {
+                try {
+                    org.json.JSONArray arr = new org.json.JSONArray(json);
+                    File dir = shareDir();
+                    ArrayList<Uri> uris = new ArrayList<Uri>();
+                    android.content.ClipData clip = null;
+                    for (int k = 0; k < arr.length(); k++) {
+                        JSONObject o = arr.getJSONObject(k);
+                        String name = o.getString("name");
+                        InputStream in = getAssets().open(o.getString("asset"));
+                        FileOutputStream os = new FileOutputStream(new File(dir, name));
+                        byte[] b = new byte[65536]; int n;
+                        while ((n = in.read(b)) > 0) os.write(b, 0, n);
+                        in.close(); os.close();
+                        Uri u = Uri.parse("content://com.kvk.kartvizit.files/" + Uri.encode(name));
+                        uris.add(u);
+                        if (clip == null) clip = android.content.ClipData.newRawUri(name, u); else clip.addItem(new android.content.ClipData.Item(u));
+                    }
+                    Intent send = new Intent(uris.size() > 1 ? Intent.ACTION_SEND_MULTIPLE : Intent.ACTION_SEND);
+                    send.setType(mime);
+                    if (uris.size() > 1) send.putParcelableArrayListExtra(Intent.EXTRA_STREAM, uris);
+                    else send.putExtra(Intent.EXTRA_STREAM, uris.get(0));
+                    send.setClipData(clip);
+                    send.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                    startActivity(Intent.createChooser(send, "Sunumları gönder"));
+                } catch (Exception e) { Toast.makeText(MainActivity.this, "Sunumlar gönderilemedi", Toast.LENGTH_LONG).show(); }
+            } });
+        }
+
         @JavascriptInterface
         public void shareAsset(final String asset, final String name, final String mime) {
             runOnUiThread(new Runnable() { public void run() {

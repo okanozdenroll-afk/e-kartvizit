@@ -4,6 +4,7 @@
   Adres: https://okanozdenroll-afk.github.io/e-kartvizit/ (GitHub Pages, `main` dalı, kök klasör)
 - **`okan-ozden.vcf`** — rehber kartı (numara, şirket, e-posta, not: “Orta Gerilim / Schneider Electric, Astor, Öznur Kablo”, fotoğraf).
   Değiştirmek için `scripts/make_vcf.py` düzenlenip çalıştırılır.
+- **`sunumlar/`** — “Sunumları paylaş” butonunun gönderdiği PDF’ler. Yeni sunum: PDF’i buraya koy, `defter.html` içindeki `SUNUMLAR` listesine satır ekle.
 - **`img/qr-kartvizit.png`** — basılı kartvizit / yaka kartı için QR (ortasında fotoğraf).
 - **`defter.html`** — Saha Satış Defteri: ziyaret notları (sesli not), kimle görüşüldü, proje, sonraki adım,
   “Bu hafta kimi aramalıyım?” listesi, müşteri geçmişi, yedek al/yükle. Veriler yalnız cihazda (localStorage `kvk_defter_v1`).

@@ -103,6 +103,14 @@ textarea{min-height:130px;resize:vertical}
 .qrbox #qr{width:min(78vw,300px);aspect-ratio:1;max-width:100%}
 .qrbox #qr svg{width:100%;height:100%;display:block}
 .qrbox p{margin:0;color:#3A4560;font-size:14px;text-align:center}
+.sunum{margin-top:14px;background:var(--card);border:1px solid var(--line);border-radius:22px;padding:14px;display:grid;gap:12px}
+.sunum .big{width:100%;justify-content:center;background:#25D366;border:0;color:#fff;border-radius:16px;padding:16px;font-weight:800;font-size:17px;display:flex;align-items:center;gap:10px;cursor:pointer}
+.sunum .big svg{width:24px;height:24px}
+.sunum .list{display:grid;gap:8px}
+.sunum .doc{display:grid;grid-template-columns:92px 1fr;gap:12px;align-items:center;text-decoration:none;color:inherit}
+.sunum .doc img{width:92px;aspect-ratio:16/9;object-fit:cover;border-radius:8px;border:1px solid var(--line);max-width:100%}
+.sunum .doc b{display:block;font-size:14.5px}
+.sunum .doc small{color:var(--muted);font-size:12.5px}
 .stat{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:14px}
 .stat div{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px;text-align:center}
 .stat b{display:block;font:800 22px/1.1 var(--display);font-variant-numeric:tabular-nums}
@@ -198,6 +206,10 @@ textarea{min-height:130px;resize:vertical}
 'use strict';
 var CARD_URL='https://okanozdenroll-afk.github.io/e-kartvizit/';
 var KEY='kvk_defter_v1';
+/* Paylaşılacak sunumlar — yeni sunum eklemek için sunumlar/ klasörüne PDF koyup buraya bir satır ekleyin */
+var SUNUMLAR=[
+  {file:'sunumlar/KVK_Enerji_Referanslar_2026.pdf',name:'KVK Enerji Referanslar 2026.pdf',title:'KVK Enerji — Referans Projeler 2026',info:'25 sayfa · GES, RES, OG hücre, köşk, şarj',img:'img/sunum1.jpg'}
+];
 var IS_APP=!!(window.Android&&window.Android.speech);
 var D;
 function blank(){return {contacts:[],visits:[],settings:{coldDays:30}}}
@@ -338,16 +350,26 @@ function rKart(){
   var h='<div class="mycard"><img src="img/okan.jpg" alt=""><div><b>Okan Özden</b><span>Ege Bölge Satış Mühendisi<br>KVK Enerji / Ultra Enerji</span></div></div>'+
    '<div class="qrbox"><div id="qr"></div><p><b>Kamerayla okutun</b> — kartvizitim açılır, “Rehbere Kaydet” ile numaram kaydedilir.</p></div>'+
    '<div class="btns" style="margin-top:14px"><button class="b pri" type="button" id="shLink">Kartvizit linkini gönder</button><button class="b" type="button" id="shVcf">Rehber dosyası (VCF) gönder</button><a class="b" href="'+(IS_APP?CARD_URL:'index.html')+'" target="_blank" rel="noopener">Kartı aç</a></div>'+
+   '<div class="sunum"><button class="big" type="button" id="shSun">'+IC.wa+'Sunumları paylaş ('+SUNUMLAR.length+')</button><div class="list">'+
+     SUNUMLAR.map(function(x){return'<a class="doc" href="'+(IS_APP?CARD_URL+x.file:x.file)+'" target="_blank" rel="noopener"><img src="'+x.img+'" alt=""><span><b>'+esc(x.title)+'</b><small>'+esc(x.info)+'</small></span></a>'}).join('')+'</div></div>'+
    '<div class="stat"><div><b>'+D.visits.filter(function(v){return v.date.slice(0,7)===thisMonth}).length+'</b><span>Bu ay görüşme</span></div><div><b>'+D.contacts.length+'</b><span>Müşteri</span></div><div><b>'+todo().length+'</b><span>Açık adım</span></div></div>'+
    '<h2>Ayar</h2><label for="cold" style="margin-top:0">“Uzun süredir aranmayan” sayılsın (gün)</label><input type="text" inputmode="numeric" id="cold" value="'+(D.settings.coldDays||30)+'" style="max-width:120px">';
   $('view').innerHTML=h;
   try{var q=qrcode(0,'M');q.addData(CARD_URL);q.make();$('qr').innerHTML=q.createSvgTag({cellSize:6,margin:0,scalable:true}).replace(/fill="black"/g,'fill="#1D428F"')}catch(e){}
+  $('shSun').onclick=shareSunum;
   $('shLink').onclick=function(){shareText('Merhaba, dijital kartvizitim: '+CARD_URL+'\nOkan Özden · KVK Enerji / Ultra Enerji · +90 554 568 08 35')};
   $('shVcf').onclick=function(){if(IS_APP&&Android.shareAsset)Android.shareAsset('okan-ozden.vcf','Okan Ozden.vcf','text/x-vcard');else{var a=document.createElement('a');a.href='okan-ozden.vcf';a.download='Okan Ozden.vcf';document.body.appendChild(a);a.click();a.remove()}};
   $('cold').onchange=function(){var n=parseInt($('cold').value,10);if(n>0){D.settings.coldDays=n;save();toast('Kaydedildi')}};
 }
 
 /* ---- paylaşım / yedek ---- */
+function shareSunum(){
+  if(IS_APP&&Android.shareAssets){Android.shareAssets(JSON.stringify(SUNUMLAR.map(function(x){return{asset:x.file,name:x.name}})),'application/pdf');return}
+  toast('Sunumlar hazırlanıyor…');
+  Promise.all(SUNUMLAR.map(function(x){return fetch(x.file).then(function(r){return r.blob()}).then(function(b){return new File([b],x.name,{type:'application/pdf'})})}))
+  .then(function(files){if(navigator.canShare&&navigator.canShare({files:files}))return navigator.share({files:files,title:'KVK Enerji sunumları'});throw 0})
+  .catch(function(e){if(e&&e.name==='AbortError')return;shareText('KVK Enerji sunumlarımız:\n'+SUNUMLAR.map(function(x){return'• '+x.title+': '+CARD_URL+x.file}).join('\n'))})}
+
 function shareText(t){if(IS_APP&&Android.shareText){Android.shareText(t);return}
   if(navigator.share){navigator.share({text:t}).catch(function(){});return}
   if(navigator.clipboard)navigator.clipboard.writeText(t).then(function(){toast('Panoya kopyalandı')},function(){toast('Kopyalanamadı')})}
