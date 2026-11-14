@@ -1,0 +1,6 @@
+android/gen/
+android/obj/
+android/bin/
+android/assets/
+*.jks
+*.idsig
