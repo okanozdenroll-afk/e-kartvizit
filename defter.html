@@ -111,6 +111,17 @@ textarea{min-height:130px;resize:vertical}
 .sunum .doc img{width:92px;aspect-ratio:16/9;object-fit:cover;border-radius:8px;border:1px solid var(--line);max-width:100%}
 .sunum .doc b{display:block;font-size:14.5px}
 .sunum .doc small{color:var(--muted);font-size:12.5px}
+.scan{background:var(--card);border:1.5px dashed var(--line);border-radius:18px;padding:14px;display:grid;gap:10px}
+.scan .row2{display:flex;gap:8px;flex-wrap:wrap}
+.scan .row2 .b{flex:1 1 auto;justify-content:center}
+.scan img{width:100%;max-height:220px;object-fit:contain;border-radius:10px;background:var(--soft)}
+.scan .st{font-size:14px;color:var(--muted)}
+.scan .bar{height:6px;border-radius:3px;background:var(--soft);overflow:hidden}
+.scan .bar i{display:block;height:100%;width:0;background:var(--navy);transition:width .2s}
+.scanbtn{width:100%;display:flex;align-items:center;justify-content:center;gap:10px;background:var(--navy);color:#fff;border:0;border-radius:16px;padding:15px;font-weight:800;font-size:16.5px;cursor:pointer;margin-bottom:12px}
+.scanbtn svg{width:24px;height:24px}
+.b.phone{background:var(--sun);border-color:var(--sun);color:#1A1A1A}
+.cardimg{width:100%;border-radius:12px;border:1px solid var(--line);margin-top:6px}
 .stat{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:14px}
 .stat div{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px;text-align:center}
 .stat b{display:block;font:800 22px/1.1 var(--display);font-variant-numeric:tabular-nums}
@@ -174,19 +185,31 @@ textarea{min-height:130px;resize:vertical}
 <div class="sheet" id="sContact">
   <header class="top"><button type="button" data-close>Vazgeç</button><h1 id="cTtl">Yeni müşteri</h1></header>
   <main>
-    <div class="btns" id="cPickWrap" hidden><button class="b" type="button" id="cPick">Telefon rehberinden seç</button></div>
+    <div class="scan" id="cScan">
+      <div class="row2"><button class="b pri" type="button" id="cCam"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>Kartviziti fotoğrafla</button><button class="b" type="button" id="cGal">Galeriden seç</button></div>
+      <img id="cImg" alt="Kartvizit fotoğrafı" hidden>
+      <div id="cProg" hidden><div class="st" id="cSt">Kartvizit okunuyor…</div><div class="bar"><i id="cBar"></i></div></div>
+      <div class="btns" id="cPickWrap" hidden><button class="b" type="button" id="cPick">Telefon rehberinden seç</button></div>
+    </div>
+    <input type="file" id="cFile" accept="image/*" capture="environment" hidden>
     <label for="cName">Ad Soyad</label><input type="text" id="cName">
     <div class="two">
       <div><label for="cCo">Firma</label><input type="text" id="cCo" list="dlCo"></div>
       <div><label for="cTitle">Görevi</label><input type="text" id="cTitle" placeholder="Satınalma, proje…"></div>
     </div>
     <div class="two">
-      <div><label for="cTel">Telefon</label><input type="tel" id="cTel"></div>
-      <div><label for="cCity">Şehir</label><input type="text" id="cCity" placeholder="İzmir, Manisa…"></div>
+      <div><label for="cTel">Cep telefonu</label><input type="tel" id="cTel"></div>
+      <div><label for="cTel2">İş telefonu</label><input type="tel" id="cTel2"></div>
     </div>
     <label for="cMail">E-posta</label><input type="email" id="cMail">
+    <div class="two">
+      <div><label for="cWeb">Web</label><input type="text" id="cWeb" inputmode="url"></div>
+      <div><label for="cCity">Şehir</label><input type="text" id="cCity" placeholder="İzmir, Manisa…"></div>
+    </div>
+    <label for="cAddr">Adres</label><input type="text" id="cAddr">
     <label for="cNote">Not</label><input type="text" id="cNote" placeholder="Örn. EPC firması, Astor tercih ediyor">
     <button class="save" type="button" id="cSave">Kaydet</button>
+    <button class="b phone" type="button" id="cSavePhone" style="width:100%;justify-content:center;margin-top:12px;padding:14px;font-size:16px">Kaydet + telefon rehberine ekle</button>
     <div class="btns" style="margin-top:14px" id="cDelWrap" hidden><button class="b dan" type="button" id="cDel">Müşteriyi sil</button></div>
   </main>
 </div>
@@ -202,6 +225,7 @@ textarea{min-height:130px;resize:vertical}
 <datalist id="dlCo"></datalist><datalist id="dlProj"></datalist>
 
 <script src="qrcode.js"></script>
+<script src="kart_tara.js"></script>
 <script>
 'use strict';
 var CARD_URL='https://okanozdenroll-afk.github.io/e-kartvizit/';
@@ -213,7 +237,9 @@ var SUNUMLAR=[
 var IS_APP=!!(window.Android&&window.Android.speech);
 var D;
 function blank(){return {contacts:[],visits:[],settings:{coldDays:30}}}
-function load(){try{D=JSON.parse(localStorage.getItem(KEY))||blank()}catch(e){D=blank()}
+function load(){try{D=JSON.parse(localStorage.getItem(KEY))||null}catch(e){D=null}
+  if(!D&&window.Android&&Android.takeMigrated){try{var m=Android.takeMigrated();if(m){D=JSON.parse(m);localStorage.setItem(KEY,m)}}catch(e){}}
+  if(!D)D=blank();
   D.contacts=D.contacts||[];D.visits=D.visits||[];D.settings=D.settings||{coldDays:30}}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(D))}catch(e){toast('Kaydedilemedi: hafıza dolu olabilir')}}
 load();
@@ -329,7 +355,8 @@ function visitCard(v,showWho){var c=v.contactId?contact(v.contactId):null;
 
 function rKisiler(){
   $('ttl').textContent='Müşteriler';$('sub').textContent=D.contacts.length+' kişi';
-  var h='<div style="display:flex;gap:8px"><input class="search" id="q2" type="search" placeholder="Ara: isim, firma, şehir…" value="'+esc(FILTER)+'"><button class="b pri" type="button" id="addC" style="flex:none">+ Yeni</button></div>';
+  var h='<button class="scanbtn" type="button" id="scanC"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>Kartvizit tara</button>'+
+    '<div style="display:flex;gap:8px"><input class="search" id="q2" type="search" placeholder="Ara: isim, firma, şehir…" value="'+esc(FILTER)+'"><button class="b pri" type="button" id="addC" style="flex:none">+ Yeni</button></div>';
   var q=norm(FILTER);
   var list=D.contacts.filter(function(c){return!q||norm([c.name,c.company,c.city,c.title,c.note].join(' ')).indexOf(q)>=0})
     .map(function(c){return{c:c,l:lastVisit(c.id)}}).sort(function(a,b){return(a.c.name||'').localeCompare(b.c.name||'','tr')});
@@ -341,6 +368,7 @@ function rKisiler(){
   $('view').innerHTML=h;
   var qi=$('q2');qi.oninput=function(){FILTER=qi.value;var p=qi.selectionStart;rKisiler();var n=$('q2');n.focus();try{n.setSelectionRange(p,p)}catch(e){}};
   $('addC').onclick=function(){openContact(null)};
+  $('scanC').onclick=function(){openContact(null);takePhoto(true)};
   $('bkOut').onclick=backupOut;$('bkIn').onclick=function(){$('bkFile').click()};$('bkFile').onchange=backupIn;
 }
 
@@ -447,14 +475,38 @@ $('micBtn').onclick=function(){
 
 /* müşteri */
 var CEDIT=null;
+var CF={Name:'name',Co:'company',Title:'title',Tel:'phone',Tel2:'phone2',City:'city',Mail:'email',Web:'web',Addr:'address',Note:'note'},CIMG='',SCANNING=false;
 function openContact(c){CEDIT=c;$('cTtl').textContent=c?'Müşteriyi düzenle':'Yeni müşteri';
-  ['Name','Co','Title','Tel','City','Mail','Note'].forEach(function(k){$('c'+k).value=c?(c[{Name:'name',Co:'company',Title:'title',Tel:'phone',City:'city',Mail:'email',Note:'note'}[k]]||''):''});
-  $('cDelWrap').hidden=!c;$('cPickWrap').hidden=!(IS_APP&&Android.pickContact)||!!c;openSheet('sContact')}
+  Object.keys(CF).forEach(function(k){$('c'+k).value=c?(c[CF[k]]||''):''});
+  CIMG=c&&c.cardImg||'';$('cImg').hidden=!CIMG;if(CIMG)$('cImg').src=CIMG;$('cProg').hidden=true;
+  $('cDelWrap').hidden=!c;$('cPickWrap').hidden=!(IS_APP&&Android.pickContact)||!!c;openSheet('sContact');if(window.KT)KT.warm()}
+function takePhoto(cam){if(IS_APP&&Android.takeCardPhoto){if(cam)Android.takeCardPhoto();else Android.pickCardImage();return}
+  var f=$('cFile');if(cam)f.setAttribute('capture','environment');else f.removeAttribute('capture');f.click()}
+$('cCam').onclick=function(){takePhoto(true)};$('cGal').onclick=function(){takePhoto(false)};
+$('cFile').onchange=function(e){var f=e.target.files[0];e.target.value='';if(!f)return;var r=new FileReader();r.onload=function(){onCardPhoto(r.result)};r.readAsDataURL(f)};
+window.onCardPhotoErr=function(m){if(m&&m!=='cancel')toast(m);else if(!m)toast('Fotoğraf alınamadı')};
+window.onCardPhoto=function(url){
+  if(!$('sContact').classList.contains('on'))openContact(null);
+  KT.thumb(url,560).then(function(t){CIMG=t;$('cImg').src=t;$('cImg').hidden=false});
+  SCANNING=true;$('cProg').hidden=false;$('cSt').textContent='Kartvizit okunuyor…';$('cBar').style.width='5%';
+  KT.scan(url,function(st,p){$('cBar').style.width=Math.round(st==='recognizing text'?40+p*60:5+p*35)+'%';
+      $('cSt').textContent=st==='recognizing text'?'Yazılar okunuyor… %'+Math.round(p*100):'Hazırlanıyor…'})
+  .then(function(r){SCANNING=false;var f=r.fields,n=0;
+    Object.keys(CF).forEach(function(k){var key=CF[k];if(key!=='note'&&f[key]&&!$('c'+k).value){$('c'+k).value=f[key];n++}});
+    $('cBar').style.width='100%';
+    $('cSt').textContent=n?n+' bilgi okundu. Kontrol edip kaydedin.':'Yazı okunamadı. Daha yakından, düz ve aydınlık çekip tekrar deneyin.';
+    if(!$('cName').value)$('cName').focus()})
+  .catch(function(e){SCANNING=false;$('cSt').textContent='Okunamadı: '+(e&&e.message||e)})};
+function contactFromForm(){var n=$('cName').value.trim();if(!n){toast('Ad Soyad yazın');$('cName').focus();return null}
+  var c=CEDIT||{id:uid(),created:Date.now()};Object.keys(CF).forEach(function(k){c[CF[k]]=$('c'+k).value.trim()});
+  if(CIMG)c.cardImg=CIMG;if(!CEDIT)D.contacts.push(c);save();return c}
+function toPhone(c){var o={name:c.name,phone:c.phone,phone2:c.phone2,email:c.email,company:c.company,title:c.title,web:c.web,address:[c.address,c.city].filter(Boolean).join(', '),note:c.note};
+  if(IS_APP&&Android.addToPhone){Android.addToPhone(JSON.stringify(o));return}
+  o.address=c.address;o.city=c.city;var a=document.createElement('a');a.href=URL.createObjectURL(new Blob([KT.vcf(o)],{type:'text/vcard'}));a.download=(c.name||'kisi')+'.vcf';document.body.appendChild(a);a.click();a.remove()}
 $('cPick').onclick=function(){Android.pickContact()};
 window.onContactPicked=function(o){try{if(typeof o==='string')o=JSON.parse(o)}catch(e){return}if(o.name)$('cName').value=o.name;if(o.phone)$('cTel').value=o.phone;if(o.email)$('cMail').value=o.email;if(o.company&&!$('cCo').value)$('cCo').value=o.company};
-$('cSave').onclick=function(){var n=$('cName').value.trim();if(!n){toast('Ad Soyad yazın');return}
-  var c=CEDIT||{id:uid(),created:Date.now()};c.name=n;c.company=$('cCo').value.trim();c.title=$('cTitle').value.trim();c.phone=$('cTel').value.trim();
-  c.city=$('cCity').value.trim();c.email=$('cMail').value.trim();c.note=$('cNote').value.trim();if(!CEDIT)D.contacts.push(c);save();closeSheet();toast('Kaydedildi')};
+$('cSave').onclick=function(){var c=contactFromForm();if(!c)return;closeSheet();toast('Kaydedildi')};
+$('cSavePhone').onclick=function(){var c=contactFromForm();if(!c)return;closeSheet();toast('Kaydedildi · rehber açılıyor');toPhone(c)};
 $('cDel').onclick=function(){var c=CEDIT,n=D.visits.filter(function(v){return v.contactId===c.id}).length;
   ask(c.name+' silinsin mi?'+(n?' '+n+' görüşme notu da silinecek.':''),function(){D.contacts=D.contacts.filter(function(x){return x!==c});D.visits=D.visits.filter(function(v){return v.contactId!==c.id});save();STACK=[];['sContact','sDetail'].forEach(function(i){$(i).classList.remove('on')});render();toast('Silindi')})};
 
@@ -463,11 +515,12 @@ var DET=null;
 function openDetail(id,refresh){var c=contact(id);if(!c)return;DET=id;$('dTtl').textContent=c.name;
   var vs=D.visits.filter(function(v){return v.contactId===id}).sort(function(a,b){return a.date<b.date?1:-1});
   var h='<div class="item"><div class="who">'+esc(c.name)+'</div><div class="co">'+esc([c.title,c.company,c.city].filter(Boolean).join(' · '))+'</div>'+
-    (c.phone?'<div class="txt">'+esc(c.phone)+'</div>':'')+(c.email?'<div class="txt"><a href="mailto:'+esc(c.email)+'" style="color:var(--link)">'+esc(c.email)+'</a></div>':'')+(c.note?'<div class="txt" style="color:var(--muted)">'+esc(c.note)+'</div>':'')+
-    '<div class="btns">'+callBtns(c.phone)+'<button class="b" type="button" id="dEdit">Düzenle</button></div></div>'+
+    (c.phone?'<div class="txt">'+esc(c.phone)+'</div>':'')+(c.phone2?'<div class="txt">İş: '+esc(c.phone2)+'</div>':'')+(c.web?'<div class="txt">'+esc(c.web)+'</div>':'')+(c.address?'<div class="txt" style="color:var(--muted)">'+esc(c.address)+'</div>':'')+(c.email?'<div class="txt"><a href="mailto:'+esc(c.email)+'" style="color:var(--link)">'+esc(c.email)+'</a></div>':'')+(c.note?'<div class="txt" style="color:var(--muted)">'+esc(c.note)+'</div>':'')+
+    '<div class="btns">'+callBtns(c.phone)+'<button class="b phone" type="button" id="dPhone">Rehbere kaydet</button><button class="b" type="button" id="dEdit">Düzenle</button></div>'+
+    (c.cardImg?'<img class="cardimg" src="'+c.cardImg+'" alt="Kartvizit">':'')+'</div>'+
     '<div class="btns" style="margin-top:12px"><button class="b ok" type="button" id="dNote">+ Bu kişiye not ekle</button></div>'+
     '<h2>Görüşme geçmişi <span class="n">'+vs.length+'</span></h2>'+(vs.length?'<div class="hist">'+vs.map(function(v){return visitCard(v,false)}).join('')+'</div>':'<div class="empty">Henüz görüşme notu yok.</div>');
-  $('dBody').innerHTML=h;$('dEdit').onclick=function(){openContact(c)};$('dNote').onclick=function(){openNote(null,c.id)};
+  $('dBody').innerHTML=h;$('dEdit').onclick=function(){openContact(c)};$('dPhone').onclick=function(){toPhone(c)};$('dNote').onclick=function(){openNote(null,c.id)};
   if(!refresh)openSheet('sDetail')}
 
 /* genel tıklamalar */

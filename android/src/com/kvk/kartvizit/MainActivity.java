@@ -15,6 +15,17 @@ import android.webkit.ValueCallback;
 import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
+import android.webkit.WebResourceRequest;
+import android.webkit.WebResourceResponse;
+import android.content.SharedPreferences;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.graphics.Matrix;
+import android.media.ExifInterface;
+import android.provider.MediaStore;
+import android.content.ContentValues;
+import java.io.ByteArrayOutputStream;
+import java.util.HashMap;
 import android.webkit.WebViewClient;
 import android.widget.FrameLayout;
 import android.widget.Toast;
@@ -28,7 +39,11 @@ import java.util.ArrayList;
 
 /* Saha Defteri: WebView kabuğu. Sesli not (Google konuşma tanıma), rehberden kişi seçme, paylaşma. */
 public class MainActivity extends Activity {
-    private static final int REQ_FILE = 41, REQ_CONTACT = 42, REQ_SPEECH = 43;
+    private static final int REQ_FILE = 41, REQ_CONTACT = 42, REQ_SPEECH = 43, REQ_CAM = 44, REQ_GAL = 45;
+    /* uygulama dosyaları bu sanal adresten sunulur (kartvizit okuma modülü için gerekli) */
+    static final String HOST = "appassets.androidplatform.net";
+    static final String HOME = "https://" + HOST + "/defter.html";
+    private volatile String migrated = null;
     private WebView web;
     private ValueCallback<Uri[]> fileCallback;
 
@@ -63,8 +78,31 @@ public class MainActivity extends Activity {
         web.addJavascriptInterface(new Bridge(), "Android");
         web.setWebViewClient(new WebViewClient() {
             @Override
+            public WebResourceResponse shouldInterceptRequest(WebView v, WebResourceRequest req) {
+                return asset(req.getUrl());
+            }
+            @Override
+            public WebResourceResponse shouldInterceptRequest(WebView v, String url) {
+                return asset(Uri.parse(url));
+            }
+            @Override
+            public void onPageFinished(WebView v, String url) {
+                if (url.startsWith("file:")) {
+                    /* eski sürüm (file://) verisini yeni adrese taşı */
+                    v.evaluateJavascript("(function(){try{return localStorage.getItem('kvk_defter_v1')||''}catch(e){return ''}})()", new ValueCallback<String>() {
+                        @Override public void onReceiveValue(String val) {
+                            String data = "";
+                            try { if (val != null && !"null".equals(val)) data = new org.json.JSONArray("[" + val + "]").getString(0); } catch (Exception e) { }
+                            SharedPreferences sp = getSharedPreferences("app", MODE_PRIVATE);
+                            sp.edit().putString("migrated", data).putBoolean("migDone", true).apply();
+                            web.loadUrl(HOME);
+                        }
+                    });
+                }
+            }
+            @Override
             public boolean shouldOverrideUrlLoading(WebView v, String url) {
-                if (url.startsWith("file:")) return false;
+                if (url.startsWith("file:") || url.startsWith("https://" + HOST + "/")) return false;
                 try { startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(url))); }
                 catch (Exception e) { Toast.makeText(MainActivity.this, "Açılamadı", Toast.LENGTH_SHORT).show(); }
                 return true;
@@ -86,14 +124,84 @@ public class MainActivity extends Activity {
             }
         });
         s.setSupportMultipleWindows(false);
+        SharedPreferences sp = getSharedPreferences("app", MODE_PRIVATE);
         if (state != null) web.restoreState(state);
-        else web.loadUrl("file:///android_asset/defter.html");
+        else if (!sp.getBoolean("migDone", false)) web.loadUrl("file:///android_asset/migrate.html");
+        else web.loadUrl(HOME);
     }
 
     @Override
     protected void onSaveInstanceState(Bundle out) { super.onSaveInstanceState(out); web.saveState(out); }
 
     private void js(String code) { web.evaluateJavascript(code, null); }
+
+    private WebResourceResponse asset(Uri u) {
+        if (u == null || !HOST.equals(u.getHost())) return null;
+        String path = u.getPath();
+        if (path == null || path.equals("/")) path = "/defter.html";
+        path = path.substring(1);
+        if (path.contains("..")) return null;
+        String mime = "application/octet-stream";
+        if (path.endsWith(".html")) mime = "text/html";
+        else if (path.endsWith(".js")) mime = "application/javascript";
+        else if (path.endsWith(".css")) mime = "text/css";
+        else if (path.endsWith(".png")) mime = "image/png";
+        else if (path.endsWith(".jpg")) mime = "image/jpeg";
+        else if (path.endsWith(".pdf")) mime = "application/pdf";
+        else if (path.endsWith(".wasm")) mime = "application/wasm";
+        else if (path.endsWith(".vcf")) mime = "text/x-vcard";
+        HashMap<String, String> h = new HashMap<String, String>();
+        h.put("Access-Control-Allow-Origin", "*");
+        h.put("Cache-Control", "no-cache");
+        try {
+            return new WebResourceResponse(mime, mime.startsWith("text/") || mime.endsWith("javascript") ? "UTF-8" : null, 200, "OK", h, getAssets().open(path));
+        } catch (Exception e) {
+            return new WebResourceResponse("text/plain", "UTF-8", 404, "Not Found", h, new java.io.ByteArrayInputStream(new byte[0]));
+        }
+    }
+
+    private File camFile() { File d = new File(getCacheDir(), "cam"); d.mkdirs(); return new File(d, "kart.jpg"); }
+
+    /* kartvizit fotoğrafını küçült, yönünü düzelt, sayfaya gönder */
+    private void sendPhoto(final Uri src, final String p0) {
+        new Thread(new Runnable() { public void run() {
+            try {
+                String path = p0;
+                if (path == null) {  /* galeriden gelen: önce dosyaya kopyala (yön bilgisini okuyabilmek için) */
+                    File g = new File(camFile().getParentFile(), "galeri.jpg");
+                    InputStream gi = getContentResolver().openInputStream(src);
+                    FileOutputStream go = new FileOutputStream(g);
+                    byte[] buf = new byte[65536]; int n;
+                    while ((n = gi.read(buf)) > 0) go.write(buf, 0, n);
+                    gi.close(); go.close();
+                    path = g.getAbsolutePath();
+                }
+                BitmapFactory.Options o = new BitmapFactory.Options(); o.inJustDecodeBounds = true;
+                InputStream in = path != null ? new java.io.FileInputStream(path) : getContentResolver().openInputStream(src);
+                BitmapFactory.decodeStream(in, null, o); in.close();
+                int sample = 1; while (Math.max(o.outWidth, o.outHeight) / sample > 2600) sample *= 2;
+                BitmapFactory.Options o2 = new BitmapFactory.Options(); o2.inSampleSize = sample;
+                in = path != null ? new java.io.FileInputStream(path) : getContentResolver().openInputStream(src);
+                Bitmap bm = BitmapFactory.decodeStream(in, null, o2); in.close();
+                int rot = 0;
+                try {
+                    if (path != null) {
+                        int or = new ExifInterface(path).getAttributeInt(ExifInterface.TAG_ORIENTATION, 1);
+                        rot = or == 6 ? 90 : or == 3 ? 180 : or == 8 ? 270 : 0;
+                    }
+                } catch (Exception e) { }
+                float k = Math.min(1f, 2000f / Math.max(bm.getWidth(), bm.getHeight()));
+                Matrix m = new Matrix(); m.postScale(k, k); if (rot != 0) m.postRotate(rot);
+                Bitmap out = Bitmap.createBitmap(bm, 0, 0, bm.getWidth(), bm.getHeight(), m, true);
+                ByteArrayOutputStream bo = new ByteArrayOutputStream();
+                out.compress(Bitmap.CompressFormat.JPEG, 88, bo);
+                final String url = "data:image/jpeg;base64," + Base64.encodeToString(bo.toByteArray(), Base64.NO_WRAP);
+                runOnUiThread(new Runnable() { public void run() { js("window.onCardPhoto && window.onCardPhoto(" + JSONObject.quote(url) + ")"); } });
+            } catch (Throwable e) {
+                runOnUiThread(new Runnable() { public void run() { js("window.onCardPhotoErr && window.onCardPhotoErr()"); } });
+            }
+        } }).start();
+    }
 
     @Override
     protected void onActivityResult(int req, int res, Intent data) {
@@ -105,6 +213,16 @@ public class MainActivity extends Activity {
             }
             if (text.length() > 0) js("window.onSpeech && window.onSpeech(" + JSONObject.quote(text) + ")");
             else js("window.onSpeechErr && window.onSpeechErr('Ses alınamadı, tekrar deneyin')");
+            return;
+        }
+        if (req == REQ_CAM) {
+            if (res == RESULT_OK && camFile().exists() && camFile().length() > 0) sendPhoto(null, camFile().getAbsolutePath());
+            else js("window.onCardPhotoErr && window.onCardPhotoErr('cancel')");
+            return;
+        }
+        if (req == REQ_GAL) {
+            if (res == RESULT_OK && data != null && data.getData() != null) sendPhoto(data.getData(), null);
+            else js("window.onCardPhotoErr && window.onCardPhotoErr('cancel')");
             return;
         }
         if (req == REQ_CONTACT) {
@@ -173,6 +291,78 @@ public class MainActivity extends Activity {
     }
 
     public class Bridge {
+        @JavascriptInterface
+        public String takeMigrated() {
+            SharedPreferences sp = getSharedPreferences("app", MODE_PRIVATE);
+            String s = sp.getString("migrated", "");
+            sp.edit().remove("migrated").apply();
+            return s;
+        }
+
+        @JavascriptInterface
+        public void takeCardPhoto() {
+            runOnUiThread(new Runnable() { public void run() {
+                try {
+                    File f = camFile(); if (f.exists()) f.delete();
+                    Uri out = Uri.parse("content://com.kvk.kartvizit.files/cam/kart.jpg");
+                    Intent i = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+                    i.putExtra(MediaStore.EXTRA_OUTPUT, out);
+                    i.setClipData(android.content.ClipData.newRawUri("kart", out));
+                    i.addFlags(Intent.FLAG_GRANT_WRITE_URI_PERMISSION | Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                    startActivityForResult(i, REQ_CAM);
+                } catch (Exception e) { js("window.onCardPhotoErr && window.onCardPhotoErr('Kamera açılamadı')"); }
+            } });
+        }
+
+        @JavascriptInterface
+        public void pickCardImage() {
+            runOnUiThread(new Runnable() { public void run() {
+                Intent i = new Intent(Intent.ACTION_GET_CONTENT); i.setType("image/*"); i.addCategory(Intent.CATEGORY_OPENABLE);
+                try { startActivityForResult(Intent.createChooser(i, "Kartvizit fotoğrafı seç"), REQ_GAL); }
+                catch (Exception e) { js("window.onCardPhotoErr && window.onCardPhotoErr('Galeri açılamadı')"); }
+            } });
+        }
+
+        /* telefon rehberine ekle: rehberin "yeni kişi" ekranı dolu açılır, Kaydet'e basmak yeter */
+        @JavascriptInterface
+        public void addToPhone(final String json) {
+            runOnUiThread(new Runnable() { public void run() {
+                try {
+                    JSONObject o = new JSONObject(json);
+                    Intent i = new Intent(ContactsContract.Intents.Insert.ACTION);
+                    i.setType(ContactsContract.RawContacts.CONTENT_TYPE);
+                    i.putExtra(ContactsContract.Intents.Insert.NAME, o.optString("name"));
+                    if (o.optString("phone").length() > 0) {
+                        i.putExtra(ContactsContract.Intents.Insert.PHONE, o.optString("phone"));
+                        i.putExtra(ContactsContract.Intents.Insert.PHONE_TYPE, ContactsContract.CommonDataKinds.Phone.TYPE_MOBILE);
+                    }
+                    if (o.optString("phone2").length() > 0) {
+                        i.putExtra(ContactsContract.Intents.Insert.SECONDARY_PHONE, o.optString("phone2"));
+                        i.putExtra(ContactsContract.Intents.Insert.SECONDARY_PHONE_TYPE, ContactsContract.CommonDataKinds.Phone.TYPE_WORK);
+                    }
+                    if (o.optString("email").length() > 0) {
+                        i.putExtra(ContactsContract.Intents.Insert.EMAIL, o.optString("email"));
+                        i.putExtra(ContactsContract.Intents.Insert.EMAIL_TYPE, ContactsContract.CommonDataKinds.Email.TYPE_WORK);
+                    }
+                    if (o.optString("company").length() > 0) i.putExtra(ContactsContract.Intents.Insert.COMPANY, o.optString("company"));
+                    if (o.optString("title").length() > 0) i.putExtra(ContactsContract.Intents.Insert.JOB_TITLE, o.optString("title"));
+                    if (o.optString("address").length() > 0) i.putExtra(ContactsContract.Intents.Insert.POSTAL, o.optString("address"));
+                    if (o.optString("note").length() > 0) i.putExtra(ContactsContract.Intents.Insert.NOTES, o.optString("note"));
+                    if (o.optString("web").length() > 0) {
+                        ArrayList<ContentValues> rows = new ArrayList<ContentValues>();
+                        ContentValues w = new ContentValues();
+                        w.put(ContactsContract.Data.MIMETYPE, ContactsContract.CommonDataKinds.Website.CONTENT_ITEM_TYPE);
+                        w.put(ContactsContract.CommonDataKinds.Website.URL, o.optString("web"));
+                        w.put(ContactsContract.CommonDataKinds.Website.TYPE, ContactsContract.CommonDataKinds.Website.TYPE_WORK);
+                        rows.add(w);
+                        i.putParcelableArrayListExtra(ContactsContract.Intents.Insert.DATA, rows);
+                    }
+                    i.putExtra("finishActivityOnSaveCompleted", true);
+                    startActivity(i);
+                } catch (Exception e) { Toast.makeText(MainActivity.this, "Rehber açılamadı", Toast.LENGTH_LONG).show(); }
+            } });
+        }
+
         @JavascriptInterface
         public void speech() {
             runOnUiThread(new Runnable() { public void run() {

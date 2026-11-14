@@ -24,6 +24,15 @@ public class ShareProvider extends ContentProvider {
 
     @Override
     public ParcelFileDescriptor openFile(Uri uri, String mode) throws FileNotFoundException {
+        /* kamera, kartvizit fotoğrafını cache/cam/kart.jpg dosyasına yazar */
+        if ("/cam/kart.jpg".equals(uri.getPath())) {
+            File d = new File(getContext().getCacheDir(), "cam"); d.mkdirs();
+            File f = new File(d, "kart.jpg");
+            int m = mode != null && mode.contains("w")
+                ? ParcelFileDescriptor.MODE_READ_WRITE | ParcelFileDescriptor.MODE_CREATE | ParcelFileDescriptor.MODE_TRUNCATE
+                : ParcelFileDescriptor.MODE_READ_ONLY;
+            return ParcelFileDescriptor.open(f, m);
+        }
         return ParcelFileDescriptor.open(fileFor(uri), ParcelFileDescriptor.MODE_READ_ONLY);
     }
 
@@ -45,6 +54,7 @@ public class ShareProvider extends ContentProvider {
         if (n == null) return "application/octet-stream";
         if (n.endsWith(".xlsx")) return "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
         if (n.endsWith(".pdf")) return "application/pdf";
+        if (n.endsWith(".jpg")) return "image/jpeg";
         if (n.endsWith(".vcf")) return "text/x-vcard";
         if (n.endsWith(".json")) return "application/json";
         return "application/octet-stream";

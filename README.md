@@ -8,5 +8,7 @@
 - **`img/qr-kartvizit.png`** — basılı kartvizit / yaka kartı için QR (ortasında fotoğraf).
 - **`defter.html`** — Saha Satış Defteri: ziyaret notları (sesli not), kimle görüşüldü, proje, sonraki adım,
   “Bu hafta kimi aramalıyım?” listesi, müşteri geçmişi, yedek al/yükle. Veriler yalnız cihazda (localStorage `kvk_defter_v1`).
+- **`kart_tara.js` + `ocr/`** — Kartvizit tarama: fotoğraftaki yazıyı internetsiz okur (Tesseract.js, Türkçe+İngilizce) ve
+  ad, firma, unvan, telefon, e-posta, web, adres alanlarına ayırır. “Kaydet + telefon rehberine ekle” rehberi dolu açar.
 - **`android/`** — APK kabuğu (`com.kvk.kartvizit`, “Saha Defteri”). Derleme: `cd android && KS_PASS=… bash build.sh 1.0 1`
   → `dist/Saha_Defteri.apk`. İmza anahtarı kvk-teklif deposundaki `keystore/ogteklif.jks` (bu depoya konmaz).
