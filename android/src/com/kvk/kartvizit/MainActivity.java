@@ -405,6 +405,26 @@ public class MainActivity extends Activity {
             } });
         }
 
+        /* sunumu uygulamanın içindeki dosyadan aç (internet ya da web sayfası gerekmez) */
+        @JavascriptInterface
+        public void openAsset(final String asset, final String name) {
+            runOnUiThread(new Runnable() { public void run() {
+                try {
+                    InputStream in = getAssets().open(asset);
+                    FileOutputStream os = new FileOutputStream(new File(shareDir(), name));
+                    byte[] b = new byte[65536]; int n;
+                    while ((n = in.read(b)) > 0) os.write(b, 0, n);
+                    in.close(); os.close();
+                    Uri u = Uri.parse("content://com.kvk.kartvizit.files/" + Uri.encode(name));
+                    Intent v = new Intent(Intent.ACTION_VIEW);
+                    v.setDataAndType(u, "application/pdf");
+                    v.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                    try { startActivity(v); }
+                    catch (Exception e) { Toast.makeText(MainActivity.this, "Telefonda PDF açacak uygulama yok. Paylaş ile gönderebilirsiniz.", Toast.LENGTH_LONG).show(); }
+                } catch (Exception e) { Toast.makeText(MainActivity.this, "Sunum açılamadı", Toast.LENGTH_LONG).show(); }
+            } });
+        }
+
         /* birden çok sunumu tek seferde gönder (WhatsApp seçilince hepsi aynı kişiye gider) */
         @JavascriptInterface
         public void shareAssets(final String json, final String mime) {

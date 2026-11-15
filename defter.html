@@ -380,12 +380,13 @@ function rKart(){
    '<div class="qrbox"><div id="qr"></div><p><b>Kamerayla okutun</b> — kartvizitim açılır, “Rehbere Kaydet” ile numaram kaydedilir.</p></div>'+
    '<div class="btns" style="margin-top:14px"><button class="b pri" type="button" id="shLink">Kartvizit linkini gönder</button><button class="b" type="button" id="shVcf">Rehber dosyası (VCF) gönder</button><a class="b" href="'+(IS_APP?CARD_URL:'index.html')+'" target="_blank" rel="noopener">Kartı aç</a></div>'+
    '<div class="sunum"><button class="big" type="button" id="shSun">'+IC.wa+'Sunumları paylaş ('+SUNUMLAR.length+')</button><div class="list">'+
-     SUNUMLAR.map(function(x){return'<a class="doc" href="'+(IS_APP?CARD_URL+x.file:x.file)+'" target="_blank" rel="noopener"><img src="'+x.img+'" alt=""><span><b>'+esc(x.title)+'</b><small>'+esc(x.info)+'</small></span></a>'}).join('')+'</div></div>'+
+     SUNUMLAR.map(function(x,i){return'<a class="doc" data-sun="'+i+'" href="'+x.file+'" target="_blank" rel="noopener"><img src="'+x.img+'" alt=""><span><b>'+esc(x.title)+'</b><small>'+esc(x.info)+'</small></span></a>'}).join('')+'</div></div>'+
    '<div class="stat"><div><b>'+D.visits.filter(function(v){return v.date.slice(0,7)===thisMonth}).length+'</b><span>Bu ay görüşme</span></div><div><b>'+D.contacts.length+'</b><span>Müşteri</span></div><div><b>'+todo().length+'</b><span>Açık adım</span></div></div>'+
    '<h2>Ayar</h2><label for="cold" style="margin-top:0">“Uzun süredir aranmayan” sayılsın (gün)</label><input type="text" inputmode="numeric" id="cold" value="'+(D.settings.coldDays||30)+'" style="max-width:120px">';
   $('view').innerHTML=h;
   try{var q=qrcode(0,'M');q.addData(CARD_URL);q.make();$('qr').innerHTML=q.createSvgTag({cellSize:6,margin:0,scalable:true}).replace(/fill="black"/g,'fill="#1D428F"')}catch(e){}
   $('shSun').onclick=shareSunum;
+  document.querySelectorAll('[data-sun]').forEach(function(el){el.onclick=function(e){if(IS_APP&&Android.openAsset){e.preventDefault();var x=SUNUMLAR[+el.dataset.sun];Android.openAsset(x.file,x.name)}}});
   $('shLink').onclick=function(){shareText('Merhaba, dijital kartvizitim: '+CARD_URL+'\nOkan Özden · KVK Enerji / Ultra Enerji · +90 554 568 08 35')};
   $('shVcf').onclick=function(){if(IS_APP&&Android.shareAsset)Android.shareAsset('okan-ozden.vcf','Okan Ozden.vcf','text/x-vcard');else{var a=document.createElement('a');a.href='okan-ozden.vcf';a.download='Okan Ozden.vcf';document.body.appendChild(a);a.click();a.remove()}};
   $('cold').onchange=function(){var n=parseInt($('cold').value,10);if(n>0){D.settings.coldDays=n;save();toast('Kaydedildi')}};
