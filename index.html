@@ -34,10 +34,10 @@ a{color:inherit}
 /* --- hat paneli --- */
 .hero{position:relative;background:linear-gradient(160deg,var(--navy) 0%,var(--navy-2) 100%);color:#fff;
   padding-top:calc(env(safe-area-inset-top,0px) + 18px);overflow:hidden;border-radius:0 0 28px 28px}
-.hero .wrap{position:relative;z-index:2;padding-bottom:88px}
+.hero .wrap{position:relative;z-index:2;padding-bottom:98px}
 .brandrow{display:flex;justify-content:space-between;align-items:center;gap:12px}
-.kvk{height:34px;border-radius:6px}
-.ultra{height:30px;width:auto;max-width:45%;object-fit:contain}
+.kvk,.ultra{width:150px;max-width:44%;height:auto;display:block}
+.kvk{border-radius:6px}
 .lines{position:absolute;inset:0;z-index:1;width:100%;height:100%;pointer-events:none}
 .lines path{fill:none;stroke:rgba(255,255,255,.16);stroke-width:1.4}
 .lines .live{stroke:var(--sun);stroke-width:2;stroke-dasharray:14 220;animation:flow 4.5s linear infinite;opacity:.9}
@@ -53,7 +53,11 @@ a{color:inherit}
 .flow li + li::before{content:"›";color:rgba(255,255,255,.45);font-weight:700;margin-right:2px}
 
 /* --- kişi --- */
-.me{position:relative;margin-top:-70px;display:grid;justify-items:center;text-align:center;gap:4px;z-index:3}
+.me{position:relative;margin-top:-80px;display:grid;justify-items:center;text-align:center;gap:4px;z-index:3}
+.photorow{width:100%;display:grid;grid-template-columns:1fr auto 1fr;gap:10px;align-items:start}
+.side{display:grid;gap:6px;min-width:0}
+.side span{background:#fff;border-radius:10px;height:32px;display:grid;place-items:center;padding:4px 8px;box-shadow:0 4px 12px rgba(10,25,60,.25)}
+.side img{max-height:24px;max-width:100%;width:auto;object-fit:contain}
 .photo{width:132px;height:132px;border-radius:50%;object-fit:cover;border:5px solid var(--card);
   box-shadow:0 0 0 3px var(--sun),0 14px 30px rgba(20,48,107,.35);background:#ccd}
 h1{font:800 34px/1.05 var(--display);letter-spacing:-.02em;margin:14px 0 2px;text-wrap:balance}
@@ -153,7 +157,11 @@ footer .sp img{height:46px;width:auto;border-radius:8px;background:#fff;padding:
 
 <main class="wrap">
   <div class="me">
-    <img class="photo" src="img/okan.jpg" alt="Okan Özden" width="132" height="132">
+    <div class="photorow">
+      <div class="side"><span><img src="img/schneider.png" alt="Schneider Electric"></span><span><img src="img/astor.png" alt="Astor"></span></div>
+      <img class="photo" src="img/okan.jpg" alt="Okan Özden" width="132" height="132">
+      <div class="side"><span><img src="img/lk.png" alt="Lauritz Knudsen"></span><span><img src="img/oznur.png" alt="Öznur Kablo"></span></div>
+    </div>
     <h1>Okan Özden</h1>
     <p class="role">Ege Bölge Satış Mühendisi</p>
     <p class="role-en">Aegean Zone Sales Engineer</p>
