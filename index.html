@@ -34,7 +34,7 @@ a{color:inherit}
 /* --- hat paneli --- */
 .hero{position:relative;background:linear-gradient(160deg,var(--navy) 0%,var(--navy-2) 100%);color:#fff;
   padding-top:calc(env(safe-area-inset-top,0px) + 18px);overflow:hidden;border-radius:0 0 28px 28px}
-.hero .wrap{position:relative;z-index:2;padding-bottom:84px}
+.hero .wrap{position:relative;z-index:2;padding-bottom:88px}
 .brandrow{display:flex;justify-content:space-between;align-items:center;gap:12px}
 .kvk{height:34px;border-radius:6px}
 .kv{font:600 11px/1 var(--body);letter-spacing:.14em;text-transform:uppercase;opacity:.75;text-align:right}
@@ -45,8 +45,12 @@ a{color:inherit}
 @keyframes flow{to{stroke-dashoffset:-468}}
 .star{position:absolute;right:22px;top:calc(env(safe-area-inset-top,0px) + 70px);width:30px;z-index:2;animation:tw 3.6s ease-in-out infinite}
 @keyframes tw{50%{transform:scale(.72) rotate(20deg);opacity:.6}}
-.tag{margin:34px 0 0;font:500 14px/1.4 var(--body);color:#D6E2FF;max-width:24ch}
-.tag b{color:var(--sun);font-weight:700}
+.tag{margin:26px 0 0;font:700 12px/1 var(--body);letter-spacing:.14em;text-transform:uppercase;color:var(--sun)}
+.flow{list-style:none;margin:10px 0 0;padding:0;display:flex;flex-wrap:wrap;gap:6px 4px;align-items:center;max-width:100%}
+.flow li{display:inline-flex;align-items:center;gap:4px;font:600 12.5px/1.2 var(--body);color:#E6EDFF}
+.flow li span{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.18);border-radius:999px;padding:5px 9px}
+.flow li.hv span{background:rgba(246,194,50,.16);border-color:rgba(246,194,50,.45);color:#FFE7A3}
+.flow li + li::before{content:"›";color:rgba(255,255,255,.45);font-weight:700;margin-right:2px}
 
 /* --- kişi --- */
 .me{position:relative;margin-top:-70px;display:grid;justify-items:center;text-align:center;gap:4px;z-index:3}
@@ -105,6 +109,7 @@ h2{font:700 13px/1 var(--body);letter-spacing:.14em;text-transform:uppercase;col
 .office .links{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px}
 .office .links a{font-size:13.5px;font-weight:600;text-decoration:none;padding:7px 12px;border-radius:10px;background:var(--paper);border:1px solid var(--line)}
 .ref{display:block;text-decoration:none;background:var(--card);border:1px solid var(--line);border-radius:20px;overflow:hidden}
+.ref + .ref{margin-top:10px}
 .ref img{display:block;width:100%;aspect-ratio:16/9;object-fit:cover}
 .ref div{padding:14px 16px;display:flex;justify-content:space-between;align-items:center;gap:12px}
 .ref b{font:700 16px/1.25 var(--body)}
@@ -141,7 +146,8 @@ footer .sp img{height:46px;width:auto;border-radius:8px;background:#fff;padding:
       <img class="kvk" src="img/kvk.png" alt="KVK Enerji A.Ş.">
       <div class="kv">Ege Bölge<br>Orta Gerilim</div>
     </div>
-    <p class="tag">Trafo merkezinden panoya, <b>orta gerilimde</b> doğru çözüm.</p>
+    <p class="tag">Panelden şebekeye tek tedarikçi</p>
+    <ul class="flow" aria-label="Ürünlerimiz"><li><span>PV Panel</span></li><li><span>Solar Kablo</span></li><li><span>Solar Konnektör</span></li><li><span>Inverter</span></li><li><span>Depolama Çözümleri</span></li><li><span>Combiner Box</span></li><li><span>Alçak Gerilim Şalt/Pano</span></li><li class="hv"><span>Orta Gerilim Trafo/Hücre/Köşk</span></li><li class="hv"><span>Orta Gerilim Röle</span></li><li><span>AC Kablo</span></li><li><span>Kablo Başlığı</span></li></ul>
   </div>
 </header>
 
@@ -194,10 +200,14 @@ footer .sp img{height:46px;width:auto;border-radius:8px;background:#fff;padding:
   </section>
 
   <section>
-    <h2>Referanslarımız</h2>
+    <h2>Sunumlarımız</h2>
+    <a class="ref" href="sunumlar/KVK_Elektrik_Enerji_2025.pdf" target="_blank" rel="noopener">
+      <img src="img/sunum2.jpg" alt="KVK Elektrik Enerji ürün portföyü sunumu" loading="lazy">
+      <div><b>Ürün Portföyü &amp; Referanslar<small>OG, solar, depolama, şarj, AG pano · 107 sayfa PDF</small></b><span class="go">Sunumu aç</span></div>
+    </a>
     <a class="ref" href="sunumlar/KVK_Enerji_Referanslar_2026.pdf" target="_blank" rel="noopener">
       <img src="img/sunum1.jpg" alt="KVK Enerji referans projeleri sunumu" loading="lazy">
-      <div><b>Referans Projeler 2026<small>GES, RES, OG hücre, köşk ve şarj projeleri · PDF</small></b><span class="go">Sunumu aç</span></div>
+      <div><b>Referans Projeler 2026<small>GES, RES, OG hücre, köşk ve şarj projeleri · 25 sayfa PDF</small></b><span class="go">Sunumu aç</span></div>
     </a>
   </section>
 
