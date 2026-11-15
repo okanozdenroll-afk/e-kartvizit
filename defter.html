@@ -17,6 +17,7 @@
 }
 @media (prefers-color-scheme: dark){:root{--paper:#0C1222;--card:#151D33;--ink:#EEF2FB;--muted:#9AA6C2;--line:#26304A;--soft:#1D2742;--link:#9CC0FF;color-scheme:dark}}
 *{box-sizing:border-box}
+[hidden]{display:none!important}
 html,body{margin:0;height:100%;overflow-x:hidden}
 body{background:var(--paper);color:var(--ink);font:16px/1.45 var(--body);-webkit-font-smoothing:antialiased}
 button,input,textarea,select{font:inherit;color:inherit}
@@ -118,6 +119,17 @@ textarea{min-height:130px;resize:vertical}
 .scan .st{font-size:14px;color:var(--muted)}
 .scan .bar{height:6px;border-radius:3px;background:var(--soft);overflow:hidden}
 .scan .bar i{display:block;height:100%;width:0;background:var(--navy);transition:width .2s}
+.scan .imgrow{position:relative}
+.scan .imgrow button{position:absolute;right:8px;bottom:8px}
+.lines{display:flex;flex-wrap:wrap;gap:6px}
+.lines button{border:1px solid var(--line);background:var(--soft);border-radius:10px;padding:7px 10px;font-size:13.5px;cursor:pointer;text-align:left;max-width:100%;overflow-wrap:anywhere}
+.lines button.on{background:var(--navy);color:#fff;border-color:var(--navy)}
+.fieldbar{display:flex;flex-wrap:wrap;gap:6px;padding:10px;border-radius:12px;background:var(--soft)}
+.fieldbar b{width:100%;font-size:13px;color:var(--muted)}
+.fieldbar button{border:0;background:var(--sun);color:#1A1A1A;border-radius:9px;padding:7px 10px;font-weight:700;font-size:13px;cursor:pointer}
+.cropwrap{position:relative;touch-action:none;user-select:none;margin-top:10px}
+.cropwrap canvas{display:block;width:100%;height:auto;border-radius:10px;background:#222}
+.cropwrap i{position:absolute;width:34px;height:34px;margin:-17px 0 0 -17px;border-radius:50%;background:rgba(246,194,50,.35);border:3px solid var(--sun);touch-action:none;cursor:grab}
 .scanbtn{width:100%;display:flex;align-items:center;justify-content:center;gap:10px;background:var(--navy);color:#fff;border:0;border-radius:16px;padding:15px;font-weight:800;font-size:16.5px;cursor:pointer;margin-bottom:12px}
 .scanbtn svg{width:24px;height:24px}
 .b.phone{background:var(--sun);border-color:var(--sun);color:#1A1A1A}
@@ -187,8 +199,13 @@ textarea{min-height:130px;resize:vertical}
   <main>
     <div class="scan" id="cScan">
       <div class="row2"><button class="b pri" type="button" id="cCam"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>Kartviziti fotoğrafla</button><button class="b" type="button" id="cGal">Galeriden seç</button></div>
-      <img id="cImg" alt="Kartvizit fotoğrafı" hidden>
+      <div class="imgrow"><img id="cImg" alt="Kartvizit fotoğrafı" hidden><button class="b" type="button" id="cCrop" hidden>Kırp / düzelt</button></div>
       <div id="cProg" hidden><div class="st" id="cSt">Kartvizit okunuyor…</div><div class="bar"><i id="cBar"></i></div></div>
+      <div id="cLinesWrap" hidden><div class="st" style="margin-bottom:6px">Yanlış okunan alan varsa doğru satıra dokunun, sonra nereye yazılacağını seçin:</div>
+        <div class="lines" id="cLines"></div>
+        <div class="fieldbar" id="cFieldBar" hidden style="margin-top:8px"><b id="cFieldSel"></b>
+          <button type="button" data-f="Name">Ad Soyad</button><button type="button" data-f="Co">Firma</button><button type="button" data-f="Title">Görev</button><button type="button" data-f="Tel">Cep</button><button type="button" data-f="Tel2">İş tel.</button><button type="button" data-f="Mail">E-posta</button><button type="button" data-f="Web">Web</button><button type="button" data-f="Addr">Adres</button><button type="button" data-f="Note">Nota ekle</button>
+        </div></div>
       <div class="btns" id="cPickWrap" hidden><button class="b" type="button" id="cPick">Telefon rehberinden seç</button></div>
     </div>
     <input type="file" id="cFile" accept="image/*" capture="environment" hidden>
@@ -214,6 +231,16 @@ textarea{min-height:130px;resize:vertical}
   </main>
 </div>
 
+<!-- kartı kırp -->
+<div class="sheet" id="sCrop">
+  <header class="top"><button type="button" data-close>Vazgeç</button><h1>Kartı kırp</h1></header>
+  <main>
+    <p style="margin:0;color:var(--muted);font-size:14.5px">Sarı köşeleri kartın dört köşesine sürükleyin. Kart düzeltilip yeniden okunur.</p>
+    <div class="cropwrap" id="cropWrap"><canvas id="cropCv"></canvas><i data-k="0"></i><i data-k="1"></i><i data-k="2"></i><i data-k="3"></i></div>
+    <button class="save" type="button" id="cropOk">Kırp ve yeniden oku</button>
+  </main>
+</div>
+
 <!-- müşteri detayı -->
 <div class="sheet" id="sDetail">
   <header class="top"><button type="button" data-close>Geri</button><h1 id="dTtl"></h1></header>
@@ -225,6 +252,7 @@ textarea{min-height:130px;resize:vertical}
 <datalist id="dlCo"></datalist><datalist id="dlProj"></datalist>
 
 <script src="qrcode.js"></script>
+<script src="tr_sozluk.js"></script>
 <script src="kart_tara.js"></script>
 <script>
 'use strict';
@@ -480,25 +508,59 @@ var CEDIT=null;
 var CF={Name:'name',Co:'company',Title:'title',Tel:'phone',Tel2:'phone2',City:'city',Mail:'email',Web:'web',Addr:'address',Note:'note'},CIMG='',SCANNING=false;
 function openContact(c){CEDIT=c;$('cTtl').textContent=c?'Müşteriyi düzenle':'Yeni müşteri';
   Object.keys(CF).forEach(function(k){$('c'+k).value=c?(c[CF[k]]||''):''});
-  CIMG=c&&c.cardImg||'';$('cImg').hidden=!CIMG;if(CIMG)$('cImg').src=CIMG;$('cProg').hidden=true;
+  CIMG=c&&c.cardImg||'';$('cImg').hidden=!CIMG;if(CIMG)$('cImg').src=CIMG;$('cProg').hidden=true;PHOTO='';LASTF={};$('cCrop').hidden=true;$('cLinesWrap').hidden=true;
   $('cDelWrap').hidden=!c;$('cPickWrap').hidden=!(IS_APP&&Android.pickContact)||!!c;openSheet('sContact');if(window.KT)KT.warm()}
 function takePhoto(cam){if(IS_APP&&Android.takeCardPhoto){if(cam)Android.takeCardPhoto();else Android.pickCardImage();return}
   var f=$('cFile');if(cam)f.setAttribute('capture','environment');else f.removeAttribute('capture');f.click()}
 $('cCam').onclick=function(){takePhoto(true)};$('cGal').onclick=function(){takePhoto(false)};
 $('cFile').onchange=function(e){var f=e.target.files[0];e.target.value='';if(!f)return;var r=new FileReader();r.onload=function(){onCardPhoto(r.result)};r.readAsDataURL(f)};
 window.onCardPhotoErr=function(m){if(m&&m!=='cancel')toast(m);else if(!m)toast('Fotoğraf alınamadı')};
-window.onCardPhoto=function(url){
+var PHOTO='',LASTF={},SELLINE='';
+window.onCardPhoto=function(url,keepPhoto){
   if(!$('sContact').classList.contains('on'))openContact(null);
-  KT.thumb(url,560).then(function(t){CIMG=t;$('cImg').src=t;$('cImg').hidden=false});
-  SCANNING=true;$('cProg').hidden=false;$('cSt').textContent='Kartvizit okunuyor…';$('cBar').style.width='5%';
-  KT.scan(url,function(st,p){$('cBar').style.width=Math.round(st==='recognizing text'?40+p*60:5+p*35)+'%';
-      $('cSt').textContent=st==='recognizing text'?'Yazılar okunuyor… %'+Math.round(p*100):'Hazırlanıyor…'})
+  if(!keepPhoto)PHOTO=url;
+  KT.thumb(url,560).then(function(t){CIMG=t;$('cImg').src=t;$('cImg').hidden=false;$('cCrop').hidden=false});
+  SCANNING=true;$('cProg').hidden=false;$('cLinesWrap').hidden=true;$('cSt').textContent='Hazırlanıyor…';$('cBar').style.width='4%';
+  KT.scan(url,function(st,p){$('cBar').style.width=Math.round(4+p*96)+'%';$('cSt').textContent='Yazılar okunuyor… %'+Math.round(p*100)})
   .then(function(r){SCANNING=false;var f=r.fields,n=0;
-    Object.keys(CF).forEach(function(k){var key=CF[k];if(key!=='note'&&f[key]&&!$('c'+k).value){$('c'+k).value=f[key];n++}});
-    $('cBar').style.width='100%';
-    $('cSt').textContent=n?n+' bilgi okundu. Kontrol edip kaydedin.':'Yazı okunamadı. Daha yakından, düz ve aydınlık çekip tekrar deneyin.';
-    if(!$('cName').value)$('cName').focus()})
+    Object.keys(CF).forEach(function(k){var key=CF[k];if(key==='note'||!f[key])return;var cur=$('c'+k).value;
+      if(!cur||cur===LASTF[key]){$('c'+k).value=f[key];n++}});
+    LASTF=f;$('cBar').style.width='100%';
+    $('cSt').textContent=n?n+' bilgi okundu. Kontrol edip kaydedin.':'Yazı okunamadı. “Kırp / düzelt” ile kartı seçin ya da daha yakından, aydınlıkta çekin.';
+    showLines(r.lines||[]);if(!$('cName').value)$('cName').focus()})
   .catch(function(e){SCANNING=false;$('cSt').textContent='Okunamadı: '+(e&&e.message||e)})};
+function showLines(ls){var w=$('cLines');SELLINE='';$('cFieldBar').hidden=true;
+  if(!ls.length){$('cLinesWrap').hidden=true;return}
+  w.innerHTML=ls.map(function(l,i){return'<button type="button" data-l="'+i+'">'+esc(l)+'</button>'}).join('');$('cLinesWrap').hidden=false;
+  w.querySelectorAll('button').forEach(function(b){b.onclick=function(){w.querySelectorAll('button').forEach(function(x){x.classList.toggle('on',x===b)});
+    SELLINE=ls[+b.dataset.l];$('cFieldSel').textContent='“'+SELLINE+'” nereye yazılsın?';$('cFieldBar').hidden=false}})}
+document.querySelectorAll('#cFieldBar [data-f]').forEach(function(b){b.onclick=function(){if(!SELLINE)return;var k=b.dataset.f,v=SELLINE;
+  if(k==='Tel'||k==='Tel2'){var d=v.replace(/\D/g,'');if(d.length>=10)v=d}
+  if(k==='Mail')v=v.replace(/\s*[@©®&]\s*/g,'@').replace(/\s+/g,'').toLowerCase();
+  if(k==='Note'){$('cNote').value=($('cNote').value?$('cNote').value+' · ':'')+v}else $('c'+k).value=v;
+  toast(b.textContent+' güncellendi');$('cFieldBar').hidden=true;$('cLines').querySelectorAll('button').forEach(function(x){x.classList.remove('on')})}});
+
+/* kırpma ekranı */
+var CROP={im:null,q:null,sc:1};
+$('cCrop').onclick=function(){if(!PHOTO){toast('Önce kartı fotoğraflayın');return}
+  KT.loadImg(PHOTO).then(function(im){CROP.im=im;var W=im.naturalWidth,H=im.naturalHeight,ix=W*.08,iy=H*.08;
+    CROP.q=[[ix,iy],[W-ix,iy],[W-ix,H-iy],[ix,H-iy]];openSheet('sCrop');setTimeout(drawCrop,30)})};
+function drawCrop(){var cv=$('cropCv'),im=CROP.im;if(!im)return;var maxW=$('cropWrap').clientWidth||360,k=Math.min(1,maxW/im.naturalWidth,560/im.naturalHeight);
+  if(k*im.naturalWidth<maxW*.6)k=maxW/im.naturalWidth;
+  cv.width=Math.round(im.naturalWidth*k);cv.height=Math.round(im.naturalHeight*k);cv.style.width=cv.width+'px';CROP.sc=k;
+  var x=cv.getContext('2d');x.drawImage(im,0,0,cv.width,cv.height);x.fillStyle='rgba(0,0,0,.45)';x.beginPath();x.rect(0,0,cv.width,cv.height);
+  var q=CROP.q.map(function(p){return[p[0]*k,p[1]*k]});x.moveTo(q[0][0],q[0][1]);for(var i=3;i>=0;i--)x.lineTo(q[i][0],q[i][1]);x.closePath();x.fill('evenodd');
+  x.strokeStyle='#F6C232';x.lineWidth=2;x.beginPath();x.moveTo(q[0][0],q[0][1]);for(i=1;i<4;i++)x.lineTo(q[i][0],q[i][1]);x.closePath();x.stroke();
+  document.querySelectorAll('#cropWrap i').forEach(function(h){var p=q[+h.dataset.k];h.style.left=(cv.offsetLeft+p[0])+'px';h.style.top=(cv.offsetTop+p[1])+'px'})}
+document.querySelectorAll('#cropWrap i').forEach(function(h){
+  h.addEventListener('pointerdown',function(e){e.preventDefault();h.setPointerCapture(e.pointerId);var k=+h.dataset.k,cv=$('cropCv');
+    function mv(ev){var r=cv.getBoundingClientRect(),x=Math.max(0,Math.min(r.width,ev.clientX-r.left)),y=Math.max(0,Math.min(r.height,ev.clientY-r.top));
+      CROP.q[k]=[x/CROP.sc*(cv.width/r.width),y/CROP.sc*(cv.height/r.height)];drawCrop()}
+    function up(){h.removeEventListener('pointermove',mv);h.removeEventListener('pointerup',up);h.removeEventListener('pointercancel',up)}
+    h.addEventListener('pointermove',mv);h.addEventListener('pointerup',up);h.addEventListener('pointercancel',up)})});
+$('cropOk').onclick=function(){var q=CROP.q.slice();$('cropOk').disabled=true;$('cropOk').textContent='Düzeltiliyor…';
+  KT.warp(PHOTO,q).then(function(u){$('cropOk').disabled=false;$('cropOk').textContent='Kırp ve yeniden oku';closeSheet();onCardPhoto(u,true)})
+  .catch(function(){$('cropOk').disabled=false;$('cropOk').textContent='Kırp ve yeniden oku';toast('Kırpılamadı')})};
 function contactFromForm(){var n=$('cName').value.trim();if(!n){toast('Ad Soyad yazın');$('cName').focus();return null}
   var c=CEDIT||{id:uid(),created:Date.now()};Object.keys(CF).forEach(function(k){c[CF[k]]=$('c'+k).value.trim()});
   if(CIMG)c.cardImg=CIMG;if(!CEDIT)D.contacts.push(c);save();return c}
